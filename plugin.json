@@ -1,0 +1,9 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "kadaster-open-data",
+  "version": "0.1.0",
+  "description": "Dutch Kadaster open data (no key): geocode addresses, find the cadastral parcel and BAG building at a location, via PDOK Locatieserver, BAG and BRK Kadastrale Kaart OGC APIs.",
+  "author": { "name": "Johan Vandewalle" },
+  "license": "MIT",
+  "keywords": ["kadaster", "pdok", "bag", "brk", "netherlands", "geocoding", "cadastre"]
+}
