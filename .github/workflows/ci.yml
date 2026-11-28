@@ -1,0 +1,34 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Syntax check
+        run: node --check server/index.mjs
+      - name: Manifests parse
+        run: node -e 'for (const f of ["mcp.json","plugin.json"]) JSON.parse(require("fs").readFileSync(f,"utf8"))'
+      - name: Offline MCP smoke test (initialize + tools/list, no PDOK calls)
+        run: |
+          printf '%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}' \
+            '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+          | timeout 20 node server/index.mjs > out.jsonl
+          node -e '
+            const l = require("fs").readFileSync("out.jsonl","utf8").trim().split("\n").map(JSON.parse);
+            const init = l.find(x => x.id === 1), list = l.find(x => x.id === 2);
+            if (!init || init.error) throw new Error("initialize failed");
+            const names = list.result.tools.map(t => t.name);
+            const want = ["kadaster_search_address","kadaster_reverse_geocode","kadaster_parcel","kadaster_building"];
+            for (const w of want) if (!names.includes(w)) throw new Error("missing tool " + w);
+            console.log("tools:", names.join(", "));'
